@@ -6,7 +6,9 @@ export const generateAIResponse = async (
   context: string
 ): Promise<string> => {
   try {
-    const apiKey = process.env.API_KEY;
+    // Safely access process.env.API_KEY avoiding crash if process is undefined
+    const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : undefined;
+    
     if (!apiKey) {
       console.warn("API Key is missing for Gemini");
       return "System: API Key is missing. Please configure it to use AI features.";
@@ -30,7 +32,7 @@ export const generateAIResponse = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash-latest', // Updated to a valid model alias
       contents: prompt,
     });
 
