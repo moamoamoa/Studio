@@ -3,8 +3,14 @@ import { ChatRoom, Message, Memo, UserRole } from '../types';
 const ROOMS_KEY = 'ai_automation_rooms';
 
 export const getRooms = (): ChatRoom[] => {
-  const stored = localStorage.getItem(ROOMS_KEY);
-  return stored ? JSON.parse(stored) : [];
+  try {
+    const stored = localStorage.getItem(ROOMS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error("Failed to parse rooms from localStorage", error);
+    // If parsing fails, return empty array to prevent app crash (white screen)
+    return [];
+  }
 };
 
 const notifyChanges = () => {

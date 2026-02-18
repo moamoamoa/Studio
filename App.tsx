@@ -157,23 +157,14 @@ const App: React.FC = () => {
 
             <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-            {isAdminMode && (
+            {isAdminMode ? (
               <Button 
                 onClick={() => setShowCreateModal(true)}
-                className="hidden sm:flex"
               >
                 <Plus size={18} className="mr-2" />
                 New Room
               </Button>
-            )}
-            {isAdminMode && (
-              <button 
-                onClick={() => setShowCreateModal(true)} 
-                className="sm:hidden w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg"
-              >
-                <Plus size={20}/>
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </nav>
@@ -184,7 +175,7 @@ const App: React.FC = () => {
         {/* Search & Header */}
         <div className="mb-8 text-center space-y-4">
            <h2 className="text-3xl font-bold text-slate-800">
-             Explore Automation Rooms
+             Explore Rooms
            </h2>
            
            <div className="relative max-w-md mx-auto mt-6 group">
