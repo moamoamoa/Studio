@@ -1,0 +1,5 @@
+{
+  "name": "AI Automation Chat",
+  "description": "A cute, AI-themed chat application allowing admins to manage rooms and users to join via password. Features memos, chat export, and AI-assisted replies.",
+  "requestFramePermissions": []
+}
