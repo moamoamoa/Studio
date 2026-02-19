@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { Message } from '../types.ts';
+import { Message } from '../types';
 
 export const generateAIResponse = async (
   history: Message[],

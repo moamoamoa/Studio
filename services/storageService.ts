@@ -1,4 +1,4 @@
-import { ChatRoom, Message, Memo, UserRole } from '../types.ts';
+import { ChatRoom, Message, Memo, UserRole } from '../types';
 
 const ROOMS_KEY = 'ai_automation_rooms';
 

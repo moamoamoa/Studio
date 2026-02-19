@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, Type } from 'lucide-react';
-import { Button } from './Button.tsx';
+import { Button } from './Button';
 
 interface CreateRoomModalProps {
   onClose: () => void;
