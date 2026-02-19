@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Lock, User } from 'lucide-react';
-import { Button } from './Button';
-import { ChatRoom } from '../types';
+import { Button } from './Button.tsx';
+import { ChatRoom } from '../types.ts';
 
 interface JoinRoomModalProps {
   room: ChatRoom;

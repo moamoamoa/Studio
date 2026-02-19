@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
 
 console.log("Starting App mount sequence...");
 
@@ -21,6 +21,5 @@ try {
   console.log("App mounted successfully");
 } catch (error) {
   console.error("Error mounting app:", error);
-  // Re-throw to trigger global error handler
   throw error;
 }

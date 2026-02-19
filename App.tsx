@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bot, Users, Plus, LayoutGrid, Search, Shield, Trash2, LogOut } from 'lucide-react';
-import { ChatRoom, UserSession, UserRole } from './types';
-import { getRooms, createRoom, deleteRoom } from './services/storageService';
-import { CreateRoomModal } from './components/CreateRoomModal';
-import { JoinRoomModal } from './components/JoinRoomModal';
-import { AdminLoginModal } from './components/AdminLoginModal';
-import { ChatInterface } from './components/ChatInterface';
-import { Button } from './components/Button';
-import { APP_NAME, AVATARS } from './constants';
+import { ChatRoom, UserSession, UserRole } from './types.ts';
+import { getRooms, createRoom, deleteRoom } from './services/storageService.ts';
+import { CreateRoomModal } from './components/CreateRoomModal.tsx';
+import { JoinRoomModal } from './components/JoinRoomModal.tsx';
+import { AdminLoginModal } from './components/AdminLoginModal.tsx';
+import { ChatInterface } from './components/ChatInterface.tsx';
+import { Button } from './components/Button.tsx';
+import { APP_NAME, AVATARS } from './constants.ts';
 
 const App: React.FC = () => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);

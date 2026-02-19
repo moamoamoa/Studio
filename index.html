@@ -6,6 +6,8 @@
     <title>AI Automation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Babel for in-browser TSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       body {
         font-family: 'Quicksand', sans-serif;
@@ -17,7 +19,6 @@
           -ms-overflow-style: none;
           scrollbar-width: none;
       }
-      /* Debug Error Box Style */
       #error-boundary {
         display: none;
         position: fixed;
@@ -42,7 +43,6 @@
       }
     </style>
     
-    <!-- CRITICAL: Global Error Handler to show errors on screen -->
     <script>
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         var container = document.getElementById('error-boundary');
@@ -60,7 +60,6 @@
         return false;
       };
 
-      // Polyfill process for browser environments
       window.process = window.process || { 
         env: { 
           NODE_ENV: 'production',
@@ -68,28 +67,26 @@
         } 
       };
     </script>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.42.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.574.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react": "https://esm.sh/react@18.2.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
-</head>
+  </head>
   <body class="bg-slate-50 text-slate-800 antialiased">
     <div id="error-boundary">
       <h2 style="font-size:1.5rem; font-weight:bold; margin-bottom: 1rem;">Something went wrong:</h2>
     </div>
     <div id="root"></div>
-    <!-- 
-      Standard Vite Entry Point. 
-      The build tool will replace '/index.tsx' with the bundled JavaScript file (e.g., /assets/index.js).
-      If you see a 404 for index.tsx in the browser console, it usually means the build step failed or didn't run.
-    -->
-    <script type="module" src="/index.tsx"></script>
+    <!-- Load index.tsx using Babel and relative path -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
   </body>
 </html>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, LogOut, Download, ClipboardList, Trash2, Bot, User as UserIcon, Plus, Smile, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { ChatRoom, UserSession, UserRole, Message, Memo } from '../types';
-import { addMemo, addMessage, deleteMemo } from '../services/storageService';
-import { COLORS, AVATARS, generateId } from '../constants';
-import { Button } from './Button';
+import { ChatRoom, UserSession, UserRole, Message, Memo } from '../types.ts';
+import { addMemo, addMessage, deleteMemo } from '../services/storageService.ts';
+import { COLORS, AVATARS, generateId } from '../constants.ts';
+import { Button } from './Button.tsx';
 
 interface ChatInterfaceProps {
   room: ChatRoom;

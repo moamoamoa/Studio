@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck } from 'lucide-react';
-import { Button } from './Button';
+import { Button } from './Button.tsx';
 
 interface AdminLoginModalProps {
   onClose: () => void;
