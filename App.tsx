@@ -5,6 +5,7 @@ import { getRooms, createRoom, deleteRoom } from './services/storageService';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { JoinRoomModal } from './components/JoinRoomModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { DeleteRoomModal } from './components/DeleteRoomModal';
 import { ChatInterface } from './components/ChatInterface';
 import { Button } from './components/Button';
 import { APP_NAME, AVATARS } from './constants';
@@ -18,6 +19,9 @@ const App: React.FC = () => {
   const [joinModalRoom, setJoinModalRoom] = useState<ChatRoom | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   
+  // State for delete confirmation modal
+  const [roomToDelete, setRoomToDelete] = useState<string | null>(null);
+  
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,9 +29,15 @@ const App: React.FC = () => {
   const loadRooms = useCallback(() => {
     const loadedRooms = getRooms();
     setRooms(loadedRooms.sort((a, b) => b.createdAt - a.createdAt));
+    
+    // Check if the current room was deleted externally
     if (currentRoom) {
       const updatedCurrent = loadedRooms.find(r => r.id === currentRoom.id);
-      if (updatedCurrent) setCurrentRoom(updatedCurrent);
+      if (updatedCurrent) {
+        setCurrentRoom(updatedCurrent);
+      } else {
+        // Option: could kick user out here if desired, but for now we keep the state clean
+      }
     }
   }, [currentRoom]);
 
@@ -36,8 +46,6 @@ const App: React.FC = () => {
     
     const handleStorageChange = () => loadRooms();
     window.addEventListener('storage', handleStorageChange);
-    
-    // Create a custom event listener for local updates
     window.addEventListener('storage-local', handleStorageChange);
 
     return () => {
@@ -52,9 +60,8 @@ const App: React.FC = () => {
   };
 
   const handleCreateRoom = (title: string, password?: string) => {
+    // 1. Create Room (Service generates unique ID)
     const newRoom = createRoom(title, password);
-    // setRooms update is handled by storage listener/loadRooms, but we can optimistically update
-    // Actually createRoom triggers storage-local event which calls loadRooms
     setShowCreateModal(false);
     
     // Auto join as Admin
@@ -66,18 +73,30 @@ const App: React.FC = () => {
     setCurrentRoom(newRoom);
   };
 
-  const handleDeleteRoom = (e: React.MouseEvent, roomId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, roomId: string) => {
+    // 1. Stop Propagation: Prevent clicking the card behind the button
+    e.preventDefault();
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this room completely?")) {
-      deleteRoom(roomId);
-      // Immediately update local state to ensure UI reflects deletion
-      setRooms(prev => prev.filter(room => room.id !== roomId));
+    
+    // 2. Open Custom Modal instead of window.confirm
+    setRoomToDelete(roomId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (roomToDelete) {
+      // 3. Delete Data
+      deleteRoom(roomToDelete);
+      
+      // 4. Update UI Immediately (Optimistic update)
+      setRooms(prevRooms => prevRooms.filter(room => room.id !== roomToDelete));
+      
+      // 5. Close Modal
+      setRoomToDelete(null);
     }
   };
 
   const handleJoinRoom = (room: ChatRoom) => {
     if (isAdminMode) {
-      // Direct access for Admin
       setCurrentUser({
         username: 'AI Bot',
         role: UserRole.ADMIN,
@@ -104,7 +123,6 @@ const App: React.FC = () => {
     setCurrentUser(null);
   };
 
-  // Filter rooms
   const filteredRooms = rooms.filter(room => 
     room.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -206,48 +224,63 @@ const App: React.FC = () => {
             {filteredRooms.map(room => (
               <div 
                 key={room.id} 
-                className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative"
-                onClick={() => handleJoinRoom(room)}
+                className="relative group h-full"
               >
+                {/* 
+                  Delete Button Layer 
+                  - z-index 50 (Very High) to ensure it sits on top
+                  - onClick stops propagation to prevent triggering handleJoinRoom
+                */}
                 {isAdminMode && (
-                  <button
-                    onClick={(e) => handleDeleteRoom(e, room.id)}
-                    className="absolute top-4 right-4 p-2 bg-white hover:bg-red-100 text-slate-300 hover:text-red-500 rounded-full transition-colors z-10 border border-slate-100"
-                    title="Delete Room"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="absolute top-3 right-3 z-50">
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteClick(e, room.id)}
+                      className="p-2.5 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full border border-slate-200 shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                      title="방 삭제하기"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 )}
 
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                    {room.title.charAt(0).toUpperCase()}
+                {/* 
+                  Card Content Layer 
+                  - z-index 10 (Lower than delete button)
+                */}
+                <div 
+                  className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full relative z-10"
+                  onClick={() => handleJoinRoom(room)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                      {room.title.charAt(0).toUpperCase()}
+                    </div>
+                    {room.password && (
+                      <span className="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                        Private
+                      </span>
+                    )}
                   </div>
-                  {room.password && (
-                    <span className="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                      Private
-                    </span>
-                  )}
-                </div>
-                
-                <h3 className="font-bold text-lg text-slate-800 mb-1 truncate pr-8">{room.title}</h3>
-                <div className="flex items-center text-xs text-slate-400 mb-6">
-                   <Users size={14} className="mr-1" />
-                   {/* This would be real count in a real backend, just static or random for visual now */}
-                   <span>{room.messages.length} messages</span>
-                   <span className="mx-2">•</span>
-                   <span>{new Date(room.createdAt).toLocaleDateString()}</span>
-                </div>
+                  
+                  <h3 className="font-bold text-lg text-slate-800 mb-1 truncate pr-8">{room.title}</h3>
+                  <div className="flex items-center text-xs text-slate-400 mb-6">
+                     <Users size={14} className="mr-1" />
+                     <span>{room.messages.length} messages</span>
+                     <span className="mx-2">•</span>
+                     <span>{new Date(room.createdAt).toLocaleDateString()}</span>
+                  </div>
 
-                <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                   <div className="flex -space-x-2">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white"></div>
-                      ))}
-                   </div>
-                   <span className="text-indigo-500 text-sm font-semibold group-hover:translate-x-1 transition-transform flex items-center">
-                     {isAdminMode ? "Enter as Admin" : "Join"} <span className="ml-1">→</span>
-                   </span>
+                  <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                     <div className="flex -space-x-2">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white"></div>
+                        ))}
+                     </div>
+                     <span className="text-indigo-500 text-sm font-semibold group-hover:translate-x-1 transition-transform flex items-center">
+                       {isAdminMode ? "Enter as Admin" : "Join"} <span className="ml-1">→</span>
+                     </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -255,6 +288,7 @@ const App: React.FC = () => {
         )}
       </main>
 
+      {/* Modals */}
       {showCreateModal && (
         <CreateRoomModal 
           onClose={() => setShowCreateModal(false)} 
@@ -274,6 +308,14 @@ const App: React.FC = () => {
         <AdminLoginModal 
           onClose={() => setShowAdminLogin(false)}
           onSuccess={() => setIsAdminMode(true)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {roomToDelete && (
+        <DeleteRoomModal
+          onClose={() => setRoomToDelete(null)}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </div>
