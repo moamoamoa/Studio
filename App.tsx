@@ -23,7 +23,7 @@ import { APP_NAME, AVATARS } from './constants';
 
 const App: React.FC = () => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
-  const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -43,23 +43,16 @@ const App: React.FC = () => {
 
   // Subscribe to room updates (Real-time or Local Storage events)
   useEffect(() => {
-    // This function returns an unsubscribe method (cleaner)
     const unsubscribe = subscribeToRooms((updatedRooms) => {
       setRooms(updatedRooms.sort((a, b) => b.createdAt - a.createdAt));
-      
-      // If inside a room, update the currentRoom state as well to reflect new messages immediately
-      if (currentRoom) {
-        const updatedCurrent = updatedRooms.find(r => r.id === currentRoom.id);
-        if (updatedCurrent) {
-          setCurrentRoom(updatedCurrent);
-        }
-      }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [currentRoom]);
+  }, []);
+
+  const activeRoom = rooms.find(r => r.id === currentRoomId) || null;
 
   // Update room wrapper to trigger re-renders and local updates
   const handleRoomUpdate = () => {
@@ -78,7 +71,7 @@ const App: React.FC = () => {
         role: UserRole.ADMIN,
       };
       setCurrentUser(session);
-      setCurrentRoom(newRoom);
+      setCurrentRoomId(newRoom.id);
     } catch (error) {
       console.error("Failed to create room:", error);
       alert("방 생성에 실패했습니다. 클라우드 연결 상태를 확인해주세요.");
@@ -165,7 +158,7 @@ const App: React.FC = () => {
         username: 'AI Bot',
         role: UserRole.ADMIN,
       });
-      setCurrentRoom(room);
+      setCurrentRoomId(room.id);
     } else {
       setJoinModalRoom(room);
     }
@@ -177,13 +170,13 @@ const App: React.FC = () => {
         username: nickname,
         role: UserRole.PARTICIPANT,
       });
-      setCurrentRoom(joinModalRoom);
+      setCurrentRoomId(joinModalRoom.id);
       setJoinModalRoom(null);
     }
   };
 
   const handleExitRoom = () => {
-    setCurrentRoom(null);
+    setCurrentRoomId(null);
     setCurrentUser(null);
   };
 
@@ -191,10 +184,10 @@ const App: React.FC = () => {
     room.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (currentRoom && currentUser) {
+  if (activeRoom && currentUser) {
     return (
       <ChatInterface 
-        room={currentRoom} 
+        room={activeRoom} 
         session={currentUser} 
         onExit={handleExitRoom}
         onUpdateRoom={handleRoomUpdate}

@@ -77,6 +77,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
   
   const [isMobilePlansOpen, setIsMobilePlansOpen] = useState(false);
   
+  // Local typing state for instant feedback
+  const [isMeTyping, setIsMeTyping] = useState(false);
+  
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -110,11 +113,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
     lastMessageCountRef.current = room.messages.length;
   }, [room.messages]);
 
+  // Scroll when typing status changes
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    const { scrollHeight, clientHeight, scrollTop } = container;
+    const isNearBottom = scrollHeight - clientHeight - scrollTop < 150;
+    
+    if (isNearBottom) {
+      scrollToBottom('smooth');
+    }
+  }, [room.typing, isMeTyping]);
+
   // Cleanup typing status on unmount
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       setTypingStatus(room.id, session.username, false);
+      setIsMeTyping(false);
     };
   }, [room.id, session.username]);
 
@@ -124,14 +141,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
 
     // Update typing status
     if (value.trim()) {
+      setIsMeTyping(true);
       setTypingStatus(room.id, session.username, true);
       
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       
       typingTimeoutRef.current = setTimeout(() => {
         setTypingStatus(room.id, session.username, false);
+        setIsMeTyping(false);
       }, 3000);
     } else {
+      setIsMeTyping(false);
       setTypingStatus(room.id, session.username, false);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     }
@@ -141,6 +161,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
     if (!inputText.trim()) return;
 
     // Clear typing status immediately on send
+    setIsMeTyping(false);
     setTypingStatus(room.id, session.username, false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
@@ -321,25 +342,47 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
           })}
 
           {/* Typing Indicator */}
+          {/* Show others typing from room state */}
           {room.typing && Object.entries(room.typing)
             .filter(([user, isTyping]) => isTyping && user !== session.username.replace(/[.#$[\]]/g, '_'))
             .map(([user]) => (
-              <div key={`typing-${user}`} className="flex justify-start animate-in fade-in slide-in-from-left-2 duration-300">
-                <div className="flex items-end gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
-                    <Bot size={16} className="text-slate-500" />
+              <div key={`typing-${user}`} className="flex justify-start animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[70%]">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm">
+                      <Bot size={16} className="text-slate-400" />
+                    </div>
                   </div>
-                  <div className="bg-slate-200 text-slate-500 px-3 py-1.5 rounded-2xl rounded-bl-none text-xs flex items-center gap-1">
-                    <span className="font-bold">{user.replace(/_/g, ' ')}</span> is typing
-                    <span className="flex gap-0.5 ml-1">
-                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  <div className={`${COLORS.otherBubble} px-3 py-2.5 rounded-2xl rounded-tl-none shadow-sm flex items-center`}>
+                    <span className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                     </span>
                   </div>
                 </div>
               </div>
             ))}
+
+          {/* Show my typing from local state for instant feedback */}
+          {isMeTyping && (
+            <div className="flex justify-end animate-in fade-in slide-in-from-bottom-1 duration-300">
+              <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[70%] flex-row-reverse">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm">
+                    <Bot size={16} className="text-indigo-500" />
+                  </div>
+                </div>
+                <div className={`${COLORS.myBubble} px-3 py-2.5 rounded-2xl rounded-tr-none shadow-sm flex items-center`}>
+                  <span className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Input Area */}
@@ -349,7 +392,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
                 type="text"
                 value={inputText}
                 onChange={handleInputChange}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Type a message..."
                 className="flex-1 bg-slate-100 text-slate-800 rounded-2xl px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
              />
