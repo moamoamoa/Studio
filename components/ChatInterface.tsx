@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, LogOut, Download, ClipboardList, Trash2, Bot, User as UserIcon, Plus, Smile, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { ChatRoom, UserSession, UserRole, Message, Memo } from '../types';
-import { addMemo, addMessage, deleteMemo } from '../services/storageService';
+import { addMemo, addMessage, deleteMemo, setTypingStatus } from '../services/storageService';
 import { COLORS, AVATARS, generateId } from '../constants';
 import { Button } from './Button';
 
@@ -79,6 +79,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesContainerRef.current) {
@@ -109,8 +110,39 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
     lastMessageCountRef.current = room.messages.length;
   }, [room.messages]);
 
+  // Cleanup typing status on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      setTypingStatus(room.id, session.username, false);
+    };
+  }, [room.id, session.username]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputText(value);
+
+    // Update typing status
+    if (value.trim()) {
+      setTypingStatus(room.id, session.username, true);
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        setTypingStatus(room.id, session.username, false);
+      }, 3000);
+    } else {
+      setTypingStatus(room.id, session.username, false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+  };
+
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
+
+    // Clear typing status immediately on send
+    setTypingStatus(room.id, session.username, false);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     const message: Message = {
       id: generateId(),
@@ -287,6 +319,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
               </div>
             );
           })}
+
+          {/* Typing Indicator */}
+          {room.typing && Object.entries(room.typing)
+            .filter(([user, isTyping]) => isTyping && user !== session.username.replace(/[.#$[\]]/g, '_'))
+            .map(([user]) => (
+              <div key={`typing-${user}`} className="flex justify-start animate-in fade-in slide-in-from-left-2 duration-300">
+                <div className="flex items-end gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+                    <Bot size={16} className="text-slate-500" />
+                  </div>
+                  <div className="bg-slate-200 text-slate-500 px-3 py-1.5 rounded-2xl rounded-bl-none text-xs flex items-center gap-1">
+                    <span className="font-bold">{user.replace(/_/g, ' ')}</span> is typing
+                    <span className="flex gap-0.5 ml-1">
+                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
         </div>
 
         {/* Input Area */}
@@ -295,7 +348,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
              <input
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Type a message..."
                 className="flex-1 bg-slate-100 text-slate-800 rounded-2xl px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-indigo-200 transition-all"

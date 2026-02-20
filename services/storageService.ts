@@ -317,6 +317,20 @@ export const deleteMemo = (roomId: string, memoId: string) => {
   }
 };
 
+export const setTypingStatus = (roomId: string, username: string, isTyping: boolean) => {
+  if (isCloudEnabled && db) {
+    const typingRef = ref(db, `rooms/${roomId}/typing/${username.replace(/[.#$[\]]/g, '_')}`);
+    if (isTyping) {
+      set(typingRef, true);
+    } else {
+      remove(typingRef);
+    }
+  } else {
+    // Local mode typing is less useful but we could trigger a local event if needed
+    // For now, only cloud mode supports real-time typing indicators between users
+  }
+};
+
 // --- Helpers ---
 export const getLocalRooms = (): ChatRoom[] => {
   try {

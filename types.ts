@@ -25,6 +25,7 @@ export interface ChatRoom {
   password?: string;
   messages: Message[];
   memos: Memo[];
+  typing?: Record<string, boolean>; // userId/username -> isTyping
   createdAt: number;
   createdBy: string;
 }
