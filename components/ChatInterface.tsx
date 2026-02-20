@@ -78,6 +78,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
   const [isMobilePlansOpen, setIsMobilePlansOpen] = useState(false);
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesContainerRef.current) {
@@ -90,8 +91,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ room, session, onE
   };
 
   useEffect(() => {
-    // Use auto (instant) scroll for message updates to prevent jitter/layout shifts on mobile
-    scrollToBottom('auto');
+    if (!messagesContainerRef.current) return;
+
+    const container = messagesContainerRef.current;
+    const { scrollHeight, clientHeight, scrollTop } = container;
+    
+    // Check if user is near bottom (within 100px)
+    const isNearBottom = scrollHeight - clientHeight - scrollTop < 100;
+    const isFirstLoad = lastMessageCountRef.current === 0;
+    const hasNewMessages = room.messages.length > lastMessageCountRef.current;
+
+    if (isFirstLoad || (hasNewMessages && isNearBottom)) {
+      // Use auto (instant) scroll for message updates to prevent jitter/layout shifts on mobile
+      scrollToBottom('auto');
+    }
+
+    lastMessageCountRef.current = room.messages.length;
   }, [room.messages]);
 
   const handleSendMessage = () => {
